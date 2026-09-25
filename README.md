@@ -4,6 +4,8 @@ New, lightweight WordPress plugin for Amazon's Creators API, designed as a simpl
 
 It currently focuses on Amazon.es and Amazon.de, with product cards, affiliate links, searches and migration support for several common AAWP shortcodes. It is an independent plugin, not a fork or clone of AAWP.
 
+The project originated from a practical need: after losing access to the older Amazon API setup used by a previous site integration, Taisa needed a simpler way to keep affiliate buttons working and to migrate away from AAWP. The plugin uses the Amazon Creators API when available and keeps direct affiliate-link fallbacks for situations where the API cannot return product data.
+
 ## Main features
 - OAuth 2.0 with Credential ID / Credential Secret and credential versions 3.1, 3.2 and 3.3.
 - Amazon.es and Amazon.de with independent Partner Tags.
@@ -49,7 +51,7 @@ define( 'TAC_CREDENTIAL_VERSION', '3.2' );
 1. Install and activate this plugin with AAWP compatibility disabled.
 2. Configure Creators API credentials and ES/DE Partner Tags.
 3. Test an ASIN in both marketplaces.
-4. Disable AAWP and the old fallback plugin.
+4. If AAWP or another old fallback plugin is active, disable it after verifying this plugin on representative pages.
 5. Enable AAWP compatibility in this plugin.
 6. Verify representative box, link, bestseller and table shortcodes.
 7. Remove AAWP only after the site is verified.
