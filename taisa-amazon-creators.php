@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'TAC_VERSION', '0.2.2' );
+define( 'TAC_VERSION', '0.2.3' );
 define( 'TAC_OPTION', 'taisa_amazon_creators_settings' );
 define( 'TAC_LOG_OPTION', 'taisa_amazon_creators_log' );
 
@@ -768,11 +768,13 @@ final class Taisa_Amazon_Creators {
         return 'sponsored nofollow noopener noreferrer';
     }
 
-    private function render_market_actions( $asin, $primary_url, $primary_market, array $secondary_items = [], $button_text = '' ) {
+    private function render_market_actions( $asin, $primary_url, $primary_market, array $secondary_items = [], $button_text = '', $compact = false ) {
         $primary = $this->marketplace_config( $primary_market );
         $label = $button_text ? $button_text : 'Ver en ' . $primary['label'];
-        $html = '<div class="tac-market-actions">';
-        $html .= '<div class="wp-block-buttons"><div class="wp-block-button">';
+        $actions_class = $compact ? 'tac-market-actions tac-market-actions-compact' : 'tac-market-actions';
+        $button_class = $compact ? 'wp-block-button tac-compact-button' : 'wp-block-button';
+        $html = '<div class="' . esc_attr( $actions_class ) . '">';
+        $html .= '<div class="wp-block-buttons"><div class="' . esc_attr( $button_class ) . '">';
         $html .= '<a class="wp-block-button__link wp-element-button tac-product-button" href="' . esc_url( $primary_url ) . '" target="_blank" rel="' . esc_attr( $this->rel_attr() ) . '">' . esc_html( $label ) . '</a>';
         $html .= '</div></div>';
         if ( $this->should_show_secondary( $primary_market ) ) {
@@ -912,7 +914,9 @@ final class Taisa_Amazon_Creators {
             $label = 'Ver resultados en ' . $primary['label'];
             return '<div class="tac-fallback"><div class="wp-block-buttons"><div class="wp-block-button"><a class="wp-block-button__link wp-element-button tac-product-button" href="' . esc_url( $this->fallback_search_url( $keywords, $primary['key'] ) ) . '" target="_blank" rel="' . esc_attr( $this->rel_attr() ) . '">' . esc_html( $label ) . '</a></div></div></div>';
         }
-        return $this->render_cards( $items, $primary['key'], $atts['button'], $atts['grid'] );
+        $html = '<p class="tac-search-context">Resultados para: <strong>' . esc_html( $keywords ) . '</strong></p>';
+        $html .= $this->render_cards( $items, $primary['key'], $atts['button'], $atts['grid'] );
+        return $html;
     }
 
     public function maybe_register_aawp_compat() {
@@ -1038,7 +1042,7 @@ final class Taisa_Amazon_Creators {
             return '<a href="' . esc_url( $item['url'] ) . '" target="_blank" rel="' . esc_attr( $this->rel_attr() ) . '">' . esc_html( $item['title'] ) . '</a>';
         }
         if ( 'button' === $type ) {
-            return $this->render_market_actions( $item['asin'], $item['url'], $primary_market, $secondary_items, '' );
+            return $this->render_market_actions( $item['asin'], $item['url'], $primary_market, $secondary_items, '', true );
         }
         if ( is_array( $values ) && ! empty( $values ) ) {
             $clean = [];
