@@ -56,6 +56,10 @@ define( 'TAC_CREDENTIAL_VERSION', '3.2' );
 6. Verify representative box, link, bestseller and table shortcodes.
 7. Remove AAWP only after the site is verified.
 
+## 0.2.3
+- Añade contexto visible a los resultados de búsqueda.
+- Mejora el formato de los botones y banderas en las tablas legacy para evitar botones verticales y demasiado estrechos.
+
 ## 0.2.2
 - Corrección de la caché negativa: los ASIN no encontrados no se renderizan como productos incompletos y activan correctamente el fallback.
 
