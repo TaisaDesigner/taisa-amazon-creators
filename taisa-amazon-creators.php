@@ -8,6 +8,7 @@
  * Requires at least: 6.3
  * Requires PHP: 7.4
  * Text Domain: taisa-amazon-creators
+ * Update URI: https://github.com/TaisaDigital/taisa-amazon-creators
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -17,6 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'TAC_VERSION', '0.2.3' );
 define( 'TAC_OPTION', 'taisa_amazon_creators_settings' );
 define( 'TAC_LOG_OPTION', 'taisa_amazon_creators_log' );
+define( 'TAC_GITHUB_REPO', 'TaisaDigital/taisa-amazon-creators' );
+define( 'TAC_UPDATE_TRANSIENT', 'tac_github_latest_release' );
 
 final class Taisa_Amazon_Creators {
     private static $instance = null;
@@ -34,6 +37,8 @@ final class Taisa_Amazon_Creators {
         add_action( 'admin_init', [ $this, 'register_settings' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'admin_assets' ] );
         add_action( 'wp_enqueue_scripts', [ $this, 'front_assets' ] );
+        add_filter( 'pre_set_site_transient_update_plugins', [ $this, 'check_github_update' ] );
+        add_filter( 'plugins_api', [ $this, 'github_plugin_information' ], 20, 3 );
 
         add_shortcode( 'taisa_amazon', [ $this, 'shortcode_product' ] );
         add_shortcode( 'taisa_amazon_search', [ $this, 'shortcode_search' ] );
@@ -123,6 +128,110 @@ final class Taisa_Amazon_Creators {
 
     public function front_assets() {
         wp_register_style( 'tac-front', plugin_dir_url( __FILE__ ) . 'assets/front.css', [], TAC_VERSION );
+    }
+
+    public function check_github_update( $transient ) {
+        if ( ! is_object( $transient ) ) {
+            return $transient;
+        }
+
+        $release = $this->github_latest_release();
+        if ( ! $release || empty( $release['version'] ) || version_compare( TAC_VERSION, $release['version'], '>=' ) ) {
+            return $transient;
+        }
+
+        $plugin_file = plugin_basename( __FILE__ );
+        $transient->response[ $plugin_file ] = (object) [
+            'id'          => 'github.com/' . TAC_GITHUB_REPO,
+            'slug'        => dirname( $plugin_file ),
+            'plugin'      => $plugin_file,
+            'new_version' => $release['version'],
+            'url'         => $release['url'],
+            'package'     => $release['package'],
+            'tested'      => '6.8',
+            'requires_php'=> '7.4',
+        ];
+
+        return $transient;
+    }
+
+    public function github_plugin_information( $result, $action, $args ) {
+        if ( 'plugin_information' !== $action || empty( $args->slug ) || dirname( plugin_basename( __FILE__ ) ) !== $args->slug ) {
+            return $result;
+        }
+
+        $release = $this->github_latest_release();
+        if ( ! $release ) {
+            return $result;
+        }
+
+        return (object) [
+            'name'           => 'Taisa Amazon Creators',
+            'slug'           => dirname( plugin_basename( __FILE__ ) ),
+            'version'        => $release['version'],
+            'author'         => '<a href="https://www.taisadigital.com">Taisa - Raquel Garcia Arevalo</a>',
+            'homepage'       => 'https://github.com/' . TAC_GITHUB_REPO,
+            'download_link'  => $release['package'],
+            'sections'       => [
+                'description' => 'Plugin ligero de Amazon afiliados para WordPress basado en Amazon Creators API, con soporte actual para Amazon.es y Amazon.de.',
+                'changelog'   => $release['body'],
+            ],
+            'banners'        => [],
+            'requires'      => '6.3',
+            'requires_php'  => '7.4',
+        ];
+    }
+
+    private function github_latest_release() {
+        $cached = get_site_transient( TAC_UPDATE_TRANSIENT );
+        if ( false !== $cached && is_array( $cached ) ) {
+            return $cached;
+        }
+
+        $response = wp_remote_get(
+            'https://api.github.com/repos/' . TAC_GITHUB_REPO . '/releases/latest',
+            [
+                'timeout' => 10,
+                'headers' => [
+                    'Accept'     => 'application/vnd.github+json',
+                    'User-Agent' => 'Taisa-Amazon-Creators/' . TAC_VERSION,
+                ],
+            ]
+        );
+
+        if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+            set_site_transient( TAC_UPDATE_TRANSIENT, [], 6 * HOUR_IN_SECONDS );
+            return [];
+        }
+
+        $json = json_decode( wp_remote_retrieve_body( $response ), true );
+        $tag = sanitize_text_field( $json['tag_name'] ?? '' );
+        $version = preg_replace( '/^v/i', '', $tag );
+        if ( ! $version || ! preg_match( '/^\\d+\\.\\d+\\.\\d+([-.][0-9A-Za-z.-]+)?$/', $version ) ) {
+            set_site_transient( TAC_UPDATE_TRANSIENT, [], 6 * HOUR_IN_SECONDS );
+            return [];
+        }
+
+        $package = '';
+        foreach ( (array) ( $json['assets'] ?? [] ) as $asset ) {
+            $name = sanitize_file_name( $asset['name'] ?? '' );
+            if ( preg_match( '/\\.zip$/i', $name ) && ! empty( $asset['browser_download_url'] ) ) {
+                $package = esc_url_raw( $asset['browser_download_url'] );
+                break;
+            }
+        }
+        if ( ! $package ) {
+            $package = esc_url_raw( $json['zipball_url'] ?? '' );
+        }
+
+        $release = [
+            'version' => $version,
+            'package' => $package,
+            'url'     => esc_url_raw( $json['html_url'] ?? 'https://github.com/' . TAC_GITHUB_REPO ),
+            'body'    => wp_kses_post( $json['body'] ?? '' ),
+        ];
+        set_site_transient( TAC_UPDATE_TRANSIENT, $release, 12 * HOUR_IN_SECONDS );
+        return $release;
     }
 
     public function settings_page() {
