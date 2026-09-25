@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Taisa Amazon Creators
  * Description: Amazon Creators API integration with ES/DE affiliate links, AAWP-compatible shortcodes, product cards, searches and legacy AAWP tables.
- * Version: 0.2.3
+ * Version: 0.2.4
  * Author: Taisa - Raquel Garcia Arevalo
  * Author URI: https://www.taisadigital.com
  * Requires at least: 6.3
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'TAC_VERSION', '0.2.3' );
+define( 'TAC_VERSION', '0.2.4' );
 define( 'TAC_OPTION', 'taisa_amazon_creators_settings' );
 define( 'TAC_LOG_OPTION', 'taisa_amazon_creators_log' );
 define( 'TAC_GITHUB_REPO', 'TaisaDigital/taisa-amazon-creators' );
